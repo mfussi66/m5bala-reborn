@@ -1,4 +1,4 @@
-#define M5STACK_MPU6886 
+#define M5STACK_MPU6886
 
 #include <M5Stack.h>
 #include "freertos/FreeRTOS.h"
@@ -9,7 +9,7 @@
 #include "calibration.h"
 #include "screen.h"
 
-//extern uint8_t bala_img[41056];
+// extern uint8_t bala_img[41056];
 static void PIDTask(void *arg);
 
 static float angle_point = 0.0;
@@ -26,7 +26,8 @@ PID pid(angle_point, kp, ki, kd);
 PID speed_pid(0, s_kp, s_ki, s_kd);
 
 // the setup routine runs once when M5Stack starts up
-void setup(){
+void setup()
+{
   // Initialize the M5Stack object
 
   M5.begin(true, false, false, false);
@@ -41,24 +42,29 @@ void setup(){
   float angle_center;
   calibrationInit();
 
-  if (M5.BtnB.isPressed()) {
+  if (M5.BtnB.isPressed())
+  {
     calibrationGryo();
     calibration_mode = true;
   }
 
-  if (M5.BtnC.isPressed()) {
+  if (M5.BtnC.isPressed())
+  {
     M5.Lcd.setCursor(0, 0);
     M5.Lcd.println("Charge mode");
-    while (1) {
-        if (M5.Power.isCharging()) {
-            M5.Lcd.println("Start charging...");
-            while(1) {
-                if (M5.Power.isChargeFull())
-                    M5.Lcd.println("Charge completed!");
-                delay(5000);
-            }
+    while (1)
+    {
+      if (M5.Power.isCharging())
+      {
+        M5.Lcd.println("Start charging...");
+        while (1)
+        {
+          if (M5.Power.isChargeFull())
+            M5.Lcd.println("Charge completed!");
+          delay(5000);
         }
-        delay(500);
+      }
+      delay(500);
     }
   }
 
@@ -70,7 +76,7 @@ void setup(){
 
   SemaphoreHandle_t i2c_mutex;
   i2c_mutex = xSemaphoreCreateMutex();
-  bala.SetMutex(&i2c_mutex);   
+  bala.SetMutex(&i2c_mutex);
 
   ImuTaskStart(x_offset, y_offset, z_offset, &i2c_mutex);
   xTaskCreatePinnedToCore(PIDTask, "pid_task", 4 * 1024, NULL, 4, NULL, 1);
@@ -78,37 +84,44 @@ void setup(){
 
   // M5.Lcd.drawJpg(bala_img, 41056);
   M5.Lcd.drawRect(160, 4, 122, 103, TFT_GREEN);
-  if (calibration_mode) {
+  if (calibration_mode)
+  {
     M5.Lcd.setCursor(0, 0);
     M5.Lcd.printf("calibration mode");
   }
 }
 
 // the loop routine runs over and over again forever
-void loop() {
+void loop()
+{
   vTaskDelay(pdMS_TO_TICKS(5));
 
   M5.update();
-  if (M5.BtnA.wasPressed()) {
+  if (M5.BtnA.wasPressed())
+  {
     angle_point += 0.25;
     pid.SetPoint(angle_point);
     screen.draw_setpoint(angle_point);
   }
-  
-  if (M5.BtnB.wasPressed()) {
-    if (calibration_mode) {
+
+  if (M5.BtnB.wasPressed())
+  {
+    if (calibration_mode)
+    {
       calibrationSaveCenterAngle(angle_point);
     }
   }
 
-  if (M5.BtnC.wasPressed()) {
+  if (M5.BtnC.wasPressed())
+  {
     angle_point -= 0.25;
     pid.SetPoint(angle_point);
     screen.draw_setpoint(angle_point);
   }
-} 
+}
 
-static void PIDTask(void *arg) {
+static void PIDTask(void *arg)
+{
   float bala_angle;
   float motor_speed = 0;
 
@@ -122,12 +135,13 @@ static void PIDTask(void *arg) {
 
   pid.SetOutputLimits(1023, -1023);
   pid.SetDirection(-1);
-  
+
   speed_pid.SetIntegralLimits(40, -40);
   speed_pid.SetOutputLimits(1023, -1023);
   speed_pid.SetDirection(1);
 
-  for(;;) {
+  for (;;)
+  {
     vTaskDelayUntil(&last_ticks, pdMS_TO_TICKS(5));
 
     // in imu task update, update freq is 200HZ
@@ -140,14 +154,23 @@ static void PIDTask(void *arg) {
     motor_speed = 0.8 * motor_speed + 0.2 * (encoder - last_encoder);
     last_encoder = encoder;
 
-    if(fabs(bala_angle) < 70) {
+    if (fabs(bala_angle) < 70)
+    {
       pwm_angle = (int16_t)pid.Update(bala_angle);
       pwm_speed = (int16_t)speed_pid.Update(motor_speed);
       pwm_output = pwm_speed + pwm_angle;
-      if(pwm_output > 1023) { pwm_output = 1023; }
-      if(pwm_output < -1023) { pwm_output = -1023; }
+      if (pwm_output > 1023)
+      {
+        pwm_output = 1023;
+      }
+      if (pwm_output < -1023)
+      {
+        pwm_output = -1023;
+      }
       bala.SetSpeed(pwm_output, pwm_output);
-    } else {
+    }
+    else
+    {
       pwm_angle = 0;
       bala.SetSpeed(0, 0);
       bala.SetEncoder(0, 0);
@@ -156,13 +179,14 @@ static void PIDTask(void *arg) {
   }
 }
 
-static void ScreenTask(void *arg) {
-TickType_t last_wake_time;
-last_wake_time = xTaskGetTickCount();
+static void ScreenTask(void *arg)
+{
+  TickType_t last_wake_time;
+  last_wake_time = xTaskGetTickCount();
 
-  for(;;) {
-      xTaskDelayUntil(&last_wake_time, pdMS_TO_TICKS(50));
-      screen.draw_waveform(getAngle());
+  for (;;)
+  {
+    xTaskDelayUntil(&last_wake_time, pdMS_TO_TICKS(50));
+    screen.draw_waveform(getAngle());
   }
 }
-
