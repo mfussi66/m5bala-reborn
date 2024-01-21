@@ -1,4 +1,7 @@
-#define M5STACK_MPU6886
+# 1 "/tmp/tmporqyqdsd"
+#include <Arduino.h>
+# 1 "/home/mattia/code/m5bala-reborn/src/Bala2.ino"
+#define M5STACK_MPU6886 
 
 #include <M5Stack.h>
 #include "freertos/FreeRTOS.h"
@@ -10,7 +13,7 @@
 #include "screen.h"
 #include "bmm150.h"
 
-// extern uint8_t bala_img[41056];
+
 static void PIDTask(void *arg);
 
 static float angle_point = 0.0;
@@ -25,11 +28,13 @@ Screen screen;
 
 PID pid(angle_point, kp, ki, kd);
 PID speed_pid(0, s_kp, s_ki, s_kd);
-
-// the setup routine runs once when M5Stack starts up
+void setup();
+void loop();
+static void ScreenTask(void *arg);
+#line 30 "/home/mattia/code/m5bala-reborn/src/Bala2.ino"
 void setup()
 {
-  // Initialize the M5Stack object
+
 
   M5.begin(true, false, false, false);
 
@@ -83,7 +88,7 @@ void setup()
   xTaskCreatePinnedToCore(PIDTask, "pid_task", 4 * 1024, NULL, 4, NULL, 1);
   xTaskCreatePinnedToCore(ScreenTask, "screen_task", 1024, NULL, 4, NULL, 1);
 
-  // M5.Lcd.drawJpg(bala_img, 41056);
+
   M5.Lcd.drawRect(160, 4, 122, 103, TFT_GREEN);
   if (calibration_mode)
   {
@@ -92,7 +97,7 @@ void setup()
   }
 }
 
-// the loop routine runs over and over again forever
+
 void loop()
 {
   vTaskDelay(pdMS_TO_TICKS(5));
@@ -145,13 +150,13 @@ static void PIDTask(void *arg)
   {
     vTaskDelayUntil(&last_ticks, pdMS_TO_TICKS(5));
 
-    // in imu task update, update freq is 200HZ
+
     bala_angle = getAngle();
 
-    // Get motor encoder value
+
     bala.UpdateEncoder();
     encoder = bala.wheel_left_encoder + bala.wheel_right_encoder;
-    // motor_speed filter
+
     motor_speed = 0.8 * motor_speed + 0.2 * (encoder - last_encoder);
     last_encoder = encoder;
 
