@@ -25,9 +25,10 @@ private:
     bool has_angle_point_changed;
     bool angle_point_was_updated;
 
-    float angle_point;
-    float angle_point_prev;
+    float angle_sp;
+    float angle_sp_prev;
     SemaphoreHandle_t angle_lock = NULL;
+    SemaphoreHandle_t angle_sp_lock = NULL;
 };
 
 #endif

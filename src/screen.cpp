@@ -3,41 +3,34 @@
 Screen::Screen()
 {
   angle_lock = xSemaphoreCreateMutex();
+  angle_sp_lock = xSemaphoreCreateMutex();
 
 }
 
-void Screen::draw_setpoint(const float& angle)
+void Screen::draw_setpoint(const float& a)
 {
-
-  if(xSemaphoreTake(angle_lock, 1000) == pdFALSE)
+  angle_sp_prev = angle_sp;
+  if(xSemaphoreTake(angle_sp_lock, 1000) == pdFALSE)
     return;
-
-  if(angle == angle_point)
-  {
-    xSemaphoreGive(angle_lock);
-    return;
-  }
-
-  angle_point_prev = angle_point;
-  angle_point = angle;
-
-  xSemaphoreGive(angle_lock);
+  angle_sp = a;
+  xSemaphoreGive(angle_sp_lock);
 
   M5.Lcd.fillRect(89, 4, 63, 103, TFT_BLACK);
   M5.Lcd.setTextColor(TFT_RED);
-  M5.Lcd.setCursor(95, constrain((int16_t)(angle * X_SCALE), -50, 50) + Y_OFFSET - 5);
-  M5.Lcd.printf("%.2f", angle);
+  M5.Lcd.setCursor(95, constrain((int16_t)(angle_sp * X_SCALE), -50, 50) + Y_OFFSET - 5);
+  M5.Lcd.printf("%.2f", angle_sp);
 
 }
 
 void Screen::update_setpoint_line()
 {
-  if(xSemaphoreTake(angle_lock, 1000) == pdFALSE)
-    return;
   // draw setpoint
-  M5.Lcd.drawFastHLine(X_OFFSET + 1, constrain((int16_t)(angle_point_prev * X_SCALE), -50, 50) + Y_OFFSET, 120, TFT_BLACK);
-  M5.Lcd.drawFastHLine(X_OFFSET + 1, constrain((int16_t)(angle_point * X_SCALE), -50, 50) + Y_OFFSET, 120, TFT_RED);
-  xSemaphoreGive(angle_lock);
+  M5.Lcd.drawFastHLine(X_OFFSET + 1, constrain((int16_t)(angle_sp_prev * X_SCALE), -50, 50) + Y_OFFSET, 120, TFT_BLACK);
+  
+  if(xSemaphoreTake(angle_sp_lock, 1000) == pdFALSE)
+    return;
+  M5.Lcd.drawFastHLine(X_OFFSET + 1, constrain((int16_t)(angle_sp * X_SCALE), -50, 50) + Y_OFFSET, 120, TFT_RED);
+  xSemaphoreGive(angle_sp_lock);
 }
 
 void Screen::draw_waveform(const float& angle)
@@ -45,7 +38,11 @@ void Screen::draw_waveform(const float& angle)
   static int16_t val_buf[MAX_LEN] = {0};
   static int16_t pt = MAX_LEN - 1;
 
+  if(xSemaphoreTake(angle_lock, 1000) == pdFALSE)
+    return;
+
   val_buf[pt] = constrain((int16_t)(angle * X_SCALE), -50, 50);
+  xSemaphoreGive(angle_lock);
 
   if (--pt < 0)
   {
