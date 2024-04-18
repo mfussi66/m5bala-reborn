@@ -10,6 +10,7 @@
 static volatile float angle;
 SemaphoreHandle_t angle_lock = NULL;
 static void ImuUpdateTask(void *arg);
+static void ImuMagUpdateTask(void *arg);
 
 int16_t gryo_x_offset;
 int16_t gryo_y_offset;
@@ -65,7 +66,7 @@ void ImuTaskStart(int16_t x_offset, int16_t y_offset, int16_t z_offset, Semaphor
   gryo_x_offset = 0 - x_offset;
   gryo_y_offset = 0 - y_offset;
   gryo_z_offset = 0 - z_offset;
-  xTaskCreatePinnedToCore(ImuUpdateTask, "imu_task", 4 * 1024, i2c_lock, 5, NULL, 1);
+  xTaskCreatePinnedToCore(ImuMagUpdateTask, "imu_task", 4 * 1024, i2c_lock, 5, NULL, 1);
 }
 
 void ImuUpdateTask(void *arg)
@@ -238,6 +239,10 @@ void ImuMagUpdateTask(void *arg)
     M5.IMU.ReadFIFOBuff(fifo_buff, fifo_count);
     xSemaphoreGive(i2c_lock);
 
+        xSemaphoreTake(i2c_lock, portMAX_DELAY);
+        bmm150.read_mag_data();
+        xSemaphoreGive(i2c_lock);
+
     imu_data = (ImuData_t *)fifo_buff;
     data_number = fifo_count / 14;
 
@@ -257,15 +262,13 @@ void ImuMagUpdateTask(void *arg)
 
       if (is_mag_initialized)
       {
-        xSemaphoreTake(i2c_lock, portMAX_DELAY);
-        bmm150.read_mag_data();
-        xSemaphoreGive(i2c_lock);
+
         mag_data = bmm150.mag_data;
         MadgwickAHRSupdate(gyro_x * DEG_TO_RAD, gyro_y * DEG_TO_RAD, gyro_z * DEG_TO_RAD,
                               acc_x_2, acc_y_2, acc_z_2,
                               mag_data.x, mag_data.y, mag_data.z,
                               pitch_ahrs, roll_ahrs, yaw_ahrs);
-      }
+                                    }
       else
       {
         MadgwickAHRSupdateIMU(gyro_x * DEG_TO_RAD, gyro_y * DEG_TO_RAD, gyro_z * DEG_TO_RAD,

@@ -8,20 +8,18 @@ BMM150::BMM150()
 }
 
 int8_t BMM150::initialize(void)
-{ 
-  //Wire.begin();
+{
+Wire.begin(static_cast<int>(SDA), static_cast<int>(SCL), static_cast<uint32_t>(4000));
 
 	/* Power up the sensor from suspend to sleep mode */
   set_op_mode(BMM150_SLEEP_MODE);
 	delay(BMM150_START_UP_TIME);
-
 	/* Check chip ID */
 	uint8_t id = i2c_read(BMM150_CHIP_ID_ADDR);	
 	Serial.printf("id = %d\r\n",id);
 	if(id != BMM150_CHIP_ID) {
 			return BMM150_E_ID_NOT_CONFORM;
 	}
-
 	/* Function to update trim values */
 	read_trim_registers();
 
@@ -330,7 +328,7 @@ void BMM150::i2c_read(short address, uint8_t *buffer, short length)
     Wire.write(address);
     Wire.endTransmission();
 
-    Wire.beginTransmission(BMM150_I2C_Address);
+    //Wire.beginTransmission(BMM150_I2C_Address);
     Wire.requestFrom(BMM150_I2C_Address, length);
     
     if(Wire.available() == length)
@@ -351,7 +349,7 @@ void BMM150::i2c_read(short address, int8_t *buffer, short length)
     Wire.write(address);
     Wire.endTransmission();
 
-    Wire.beginTransmission(BMM150_I2C_Address);
+    //Wire.beginTransmission(BMM150_I2C_Address);
     Wire.requestFrom(BMM150_I2C_Address, length);
     
     if(Wire.available() == length)
@@ -368,15 +366,14 @@ void BMM150::i2c_read(short address, int8_t *buffer, short length)
 uint8_t BMM150::i2c_read(short address)
 {
     uint8_t byte;
-
     Wire.beginTransmission(BMM150_I2C_Address);
     Wire.write(address);
     Wire.endTransmission();
 
-    Wire.beginTransmission(BMM150_I2C_Address);
+    //Wire.beginTransmission(BMM150_I2C_Address);
     Wire.requestFrom(BMM150_I2C_Address, 1);
     byte = Wire.read();
-    
+
     Wire.endTransmission();
     return byte;
 }
@@ -411,7 +408,7 @@ void BMM150::set_op_mode(uint8_t pwr_mode)
         case BMM150_SLEEP_MODE:
             /* If the sensor is in suspend mode
             put the device to sleep mode */
-            suspend_to_sleep_mode();
+           suspend_to_sleep_mode();
             /* write the op mode */
             write_op_mode(pwr_mode);
             break;

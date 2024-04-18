@@ -146,17 +146,23 @@ static void PIDTask(void *arg)
     vTaskDelayUntil(&last_ticks, pdMS_TO_TICKS(5));
 
     // in imu task update, update freq is 200HZ
+
     bala_angle = getAngle();
 
-    // Get motor encoder value
-    bala.UpdateEncoder();
+   // Get motor encoder value
+    //bala.UpdateEncoder();
     encoder = bala.wheel_left_encoder + bala.wheel_right_encoder;
     // motor_speed filter
     motor_speed = 0.8 * motor_speed + 0.2 * (encoder - last_encoder);
     last_encoder = encoder;
 
+      Serial.println("222");
+
+
     if (fabs(bala_angle) < 70)
     {
+
+      Serial.printf("pwm %d", pwm_output);
       pwm_angle = (int16_t)pid.Update(bala_angle);
       pwm_speed = (int16_t)speed_pid.Update(motor_speed);
       pwm_output = pwm_speed + pwm_angle;
@@ -187,7 +193,7 @@ static void ScreenTask(void *arg)
 
   for (;;)
   {
-    xTaskDelayUntil(&last_wake_time, pdMS_TO_TICKS(50));
+    xTaskDelayUntil(&last_wake_time, pdMS_TO_TICKS(100));
     screen.draw_waveform(getAngle());
   }
 }
